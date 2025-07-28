@@ -29,11 +29,11 @@ func functionPath() string {
 	return runtime.FuncForPC(pc).Name()
 }
 
-func AddTracingHook(ctx context.Context, req *http.Request) {
+func Inject(ctx context.Context, req *http.Request) {
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 }
 
-func StartFromRequest(req *http.Request) (context.Context, trace.Span) {
+func ExtractSpan(req *http.Request) (context.Context, trace.Span) {
 	ctx := otel.GetTextMapPropagator().Extract(req.Context(), propagation.HeaderCarrier(req.Header))
 
 	path := functionPath()
