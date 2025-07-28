@@ -2,6 +2,8 @@ package tracing
 
 import (
 	"context"
+	"go.opentelemetry.io/otel/propagation"
+	"net/http"
 	"runtime"
 	"strings"
 
@@ -25,4 +27,19 @@ func functionPath() string {
 	}
 
 	return runtime.FuncForPC(pc).Name()
+}
+
+func AddTracingHook(ctx context.Context, req *http.Request) {
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+}
+
+func StartFromRequest(req *http.Request) (context.Context, trace.Span) {
+	ctx := otel.GetTextMapPropagator().Extract(req.Context(), propagation.HeaderCarrier(req.Header))
+
+	path := functionPath()
+
+	pathParts := strings.Split(path, "/")
+	name := pathParts[len(pathParts)-1]
+
+	return otel.Tracer("default_tracer").Start(ctx, name)
 }

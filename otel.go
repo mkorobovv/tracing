@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -107,6 +108,9 @@ func NewTelemetry(ctx context.Context, opts ...Option) (shutdown Shutdown, err e
 		return shutdown, err
 	}
 
+	pr := newPropagator()
+	otel.SetTextMapPropagator(pr)
+
 	shutdowns = append(shutdowns, tp.Shutdown)
 
 	return shutdown, nil
@@ -171,5 +175,12 @@ func newResource(serviceName string) *resource.Resource {
 	return resource.NewWithAttributes(
 		semconv.SchemaURL,
 		semconv.ServiceName(serviceName),
+	)
+}
+
+func newPropagator() propagation.TextMapPropagator {
+	return propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
 	)
 }
